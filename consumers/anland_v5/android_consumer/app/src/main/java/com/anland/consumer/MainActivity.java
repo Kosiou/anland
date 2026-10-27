@@ -142,6 +142,7 @@ public class MainActivity extends Activity
 
     // ==================== 触摸板相关设置 ====================
     public static final String KEY_TOUCHPAD_MODE = "touchpad_mode";
+    public static final String KEY_STYLUS_BUTTON_RIGHT_CLICK = "stylus_button_right_click";
     public static final String KEY_MOUSE_ACCEL = "mouse_speed"; // 名称仍为 speed，实际控制加速度强度
     // Two-finger scroll tuning, shared by the on-screen and captured touchpads.
     public static final String KEY_SCROLL_SPEED = "scroll_speed";
@@ -307,6 +308,8 @@ public class MainActivity extends Activity
             lifecycleHandler.removeCallbacks(delayedFocusStop);
             lifecycleHandler.postDelayed(delayedFocusStop, FOCUS_STOP_DELAY_MS);
         }
+        if (!hasFocus)
+            releaseAllMouseButtons();
         if (hasFocus && clipboard != null) {
             clipboard.pushClipboard();
         }
@@ -2331,7 +2334,11 @@ public class MainActivity extends Activity
             }
             if (action == MotionEvent.ACTION_BUTTON_PRESS
                     || action == MotionEvent.ACTION_BUTTON_RELEASE) {
-                updateMouseButtonStateFromEvent(event);
+                int tool = event.getToolType(event.getActionIndex());
+                if (tool == MotionEvent.TOOL_TYPE_STYLUS || tool == MotionEvent.TOOL_TYPE_ERASER)
+                    updateStylusButtonState(event);
+                else
+                    updateMouseButtonStateFromEvent(event);
                 return true;
             }
         }
@@ -2591,6 +2598,29 @@ public class MainActivity extends Activity
         updateMouseButtonState(bs);
     }
 
+    private void updateStylusButtonState(MotionEvent event) {
+        int action = event.getActionMasked();
+        if (action == MotionEvent.ACTION_CANCEL) {
+            releaseAllMouseButtons();
+            return;
+        }
+        int buttons = event.getButtonState();
+        boolean touching = action == MotionEvent.ACTION_DOWN
+                || action == MotionEvent.ACTION_MOVE && event.getPressure() > 0f;
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_HOVER_MOVE
+                || action == MotionEvent.ACTION_HOVER_ENTER || action == MotionEvent.ACTION_HOVER_EXIT)
+            touching = false;
+        int desired = buttons & ~(MotionEvent.BUTTON_PRIMARY | MotionEvent.BUTTON_SECONDARY);
+        if (touching) {
+            boolean right = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getBoolean(
+                    KEY_STYLUS_BUTTON_RIGHT_CLICK, true)
+                    && (buttons & (MotionEvent.BUTTON_STYLUS_PRIMARY
+                    | MotionEvent.BUTTON_STYLUS_SECONDARY)) != 0;
+            desired |= right ? MotionEvent.BUTTON_SECONDARY : MotionEvent.BUTTON_PRIMARY;
+        }
+        updateMouseButtonState(desired);
+    }
+
     private void releaseAllMouseButtons() {
         if (savedBS == 0)
             return;
@@ -2671,7 +2701,11 @@ public class MainActivity extends Activity
         }
         mNative.sendMouseMotion(nativeX, nativeY, dx, dy);
 
-        updateMouseButtonStateFromEvent(event);
+        if (event.getToolType(event.getActionIndex()) == MotionEvent.TOOL_TYPE_STYLUS
+                || event.getToolType(event.getActionIndex()) == MotionEvent.TOOL_TYPE_ERASER)
+            updateStylusButtonState(event);
+        else
+            updateMouseButtonStateFromEvent(event);
         return true;
     }
 
