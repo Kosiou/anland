@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Process;
-import android.os.UserHandle;
 import android.util.Log;
 
 import java.util.Collections;
@@ -20,6 +19,7 @@ final class StylusHoverPointerLease {
     private static final String SETTING = "pen_hovering_pointer";
     private static final String ACTIVE_PREF = "spen_pointer_override_active";
     private static final String ORIGINAL_PREF = "spen_pointer_override_original";
+    private static final int UID_PER_USER_RANGE = 100000;
     private static final long COMMAND_TIMEOUT_MS = 5000;
     private static final long RELEASE_DELAY_MS = 700;
 
@@ -190,7 +190,7 @@ final class StylusHoverPointerLease {
     }
 
     private static int currentUserId() {
-        return UserHandle.getUserHandleForUid(Process.myUid()).getIdentifier();
+        return Process.myUid() / UID_PER_USER_RANGE;
     }
 
     private void clearSavedOverride() {
