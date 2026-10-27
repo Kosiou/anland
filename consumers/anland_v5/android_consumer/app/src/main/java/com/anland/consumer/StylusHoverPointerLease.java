@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Process;
 import android.os.UserHandle;
 import android.util.Log;
 
@@ -112,7 +113,7 @@ final class StylusHoverPointerLease {
         }
 
         if (!"0".equals(current.value)) {
-            SuCommand.CommandResult result = run(putCommand(UserHandle.myUserId(), "0"));
+            SuCommand.CommandResult result = run(putCommand(currentUserId(), "0"));
             if (!result.isClean()) {
                 SettingValue after = readSetting();
                 if (!after.valid || !"0".equals(after.value)) {
@@ -144,7 +145,7 @@ final class StylusHoverPointerLease {
             return false;
         }
 
-        int userId = UserHandle.myUserId();
+        int userId = currentUserId();
         SettingValue current = readSetting();
         if (!current.valid) {
             Log.w(TAG, "Cannot read S Pen pointer setting for restoration");
@@ -177,7 +178,7 @@ final class StylusHoverPointerLease {
     }
 
     private SettingValue readSetting() {
-        SuCommand.CommandResult result = run(getCommand(UserHandle.myUserId()));
+        SuCommand.CommandResult result = run(getCommand(currentUserId()));
         if (!result.isClean())
             return new SettingValue(false, null);
         String value = result.stdout.trim();
@@ -186,6 +187,10 @@ final class StylusHoverPointerLease {
 
     private SuCommand.CommandResult run(String command) {
         return runner.run(command, COMMAND_TIMEOUT_MS);
+    }
+
+    private static int currentUserId() {
+        return UserHandle.getUserHandleForUid(Process.myUid()).getIdentifier();
     }
 
     private void clearSavedOverride() {
