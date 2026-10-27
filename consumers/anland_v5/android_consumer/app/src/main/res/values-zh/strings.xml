@@ -126,6 +126,9 @@
     <!-- Touchpad -->
     <string name="touchpad_mode_switch">触摸板模式（相对移动）</string>
     <string name="stylus_button_right_click_switch">手写笔侧键作为右键</string>
+    <string name="stylus_hover_scroll_switch">悬停时按住手写笔侧键滚动</string>
+    <string name="stylus_hover_scroll_hint">按住手写笔侧键并移动悬空的笔尖。滚动量取纵向位移，斜向移动也按其中的纵向分量计算。</string>
+    <string name="stylus_hover_scroll_speed_label">手写笔悬停滚动速度</string>
     <string name="hide_system_stylus_pointer_switch">隐藏 Android 手写笔悬停指针（需要 Root）</string>
     <string name="hide_system_stylus_pointer_hint">Anland 桌面窗口处于前台时，临时关闭系统悬停指针；离开前台时恢复原值。需要 Root。若 Android 强行停止 Anland，设置会在下次打开 Anland 时恢复。</string>
     <string name="touchpad_hint">开启：手指滑动移动鼠标光标（相对）。关闭：触摸直接映射到屏幕（绝对）。</string>
