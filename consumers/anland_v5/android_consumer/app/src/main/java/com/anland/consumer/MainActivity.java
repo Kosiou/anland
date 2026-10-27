@@ -143,6 +143,8 @@ public class MainActivity extends Activity
     // ==================== 触摸板相关设置 ====================
     public static final String KEY_TOUCHPAD_MODE = "touchpad_mode";
     public static final String KEY_STYLUS_BUTTON_RIGHT_CLICK = "stylus_button_right_click";
+    public static final String KEY_STYLUS_HOVER_SCROLL = "stylus_hover_scroll";
+    public static final String KEY_STYLUS_HOVER_SCROLL_SPEED = "stylus_hover_scroll_speed";
     public static final String KEY_MOUSE_ACCEL = "mouse_speed"; // 名称仍为 speed，实际控制加速度强度
     // Two-finger scroll tuning, shared by the on-screen and captured touchpads.
     public static final String KEY_SCROLL_SPEED = "scroll_speed";
@@ -310,6 +312,7 @@ public class MainActivity extends Activity
         }
         if (!hasFocus) {
             stylusTouching = false;
+            stylusHoverScroll.reset();
             releaseAllMouseButtons();
         }
         if (hasFocus && clipboard != null) {
@@ -1672,6 +1675,7 @@ public class MainActivity extends Activity
         super.onPause();
         Log.i(TAG, "onPause: stopping native and immersive input");
         mResumed = false;
+        stylusHoverScroll.reset();
         lifecycleHandler.removeCallbacks(delayedFocusStop);
         lifecycleHandler.removeCallbacks(delayedSurfaceStop);
         // Socket-missing bounce: no pipeline exists, so skip teardown (mNative is
@@ -2304,6 +2308,12 @@ public class MainActivity extends Activity
                 requestPointerCaptureAfterClick();
             }
             if (action == MotionEvent.ACTION_HOVER_MOVE) {
+                int tool = event.getToolType(event.getActionIndex());
+                if (tool == MotionEvent.TOOL_TYPE_STYLUS
+                        || tool == MotionEvent.TOOL_TYPE_ERASER) {
+                    updateStylusButtonState(event);
+                    updateStylusHoverScroll(event);
+                }
                 float nativeX, nativeY;
                 if (autoStretch) {
                     float scaleX = (customScreenWidth > 0 && viewWidth > 0) ? 
@@ -2325,6 +2335,16 @@ public class MainActivity extends Activity
                                       event.getAxisValue(MotionEvent.AXIS_RELATIVE_Y));
                 return true;
             }
+            if (action == MotionEvent.ACTION_HOVER_ENTER
+                    || action == MotionEvent.ACTION_HOVER_EXIT) {
+                int tool = event.getToolType(event.getActionIndex());
+                if (tool == MotionEvent.TOOL_TYPE_STYLUS
+                        || tool == MotionEvent.TOOL_TYPE_ERASER) {
+                    updateStylusButtonState(event);
+                    updateStylusHoverScroll(event);
+                    return true;
+                }
+            }
             if (action == MotionEvent.ACTION_SCROLL) {
                 float vScroll = event.getAxisValue(MotionEvent.AXIS_VSCROLL);
                 float hScroll = event.getAxisValue(MotionEvent.AXIS_HSCROLL);
@@ -2337,9 +2357,10 @@ public class MainActivity extends Activity
             if (action == MotionEvent.ACTION_BUTTON_PRESS
                     || action == MotionEvent.ACTION_BUTTON_RELEASE) {
                 int tool = event.getToolType(event.getActionIndex());
-                if (tool == MotionEvent.TOOL_TYPE_STYLUS || tool == MotionEvent.TOOL_TYPE_ERASER)
+                if (tool == MotionEvent.TOOL_TYPE_STYLUS || tool == MotionEvent.TOOL_TYPE_ERASER) {
+                    updateStylusHoverScroll(event);
                     updateStylusButtonState(event);
-                else
+                } else
                     updateMouseButtonStateFromEvent(event);
                 return true;
             }
@@ -2533,6 +2554,7 @@ public class MainActivity extends Activity
 
     private int savedBS = 0;
     private boolean stylusTouching = false;
+    private final StylusHoverScroll stylusHoverScroll = new StylusHoverScroll();
 
     private static final int[][] BUTTON_MAP = {
         {MotionEvent.BUTTON_PRIMARY,   0x110}, // BTN_LEFT
@@ -2612,6 +2634,7 @@ public class MainActivity extends Activity
         if (action == MotionEvent.ACTION_DOWN)
             stylusTouching = true;
         else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_HOVER_ENTER
+                || action == MotionEvent.ACTION_HOVER_MOVE
                 || action == MotionEvent.ACTION_HOVER_EXIT)
             stylusTouching = false;
         else if (action == MotionEvent.ACTION_MOVE)
@@ -2625,6 +2648,29 @@ public class MainActivity extends Activity
             desired |= right ? MotionEvent.BUTTON_SECONDARY : MotionEvent.BUTTON_PRIMARY;
         }
         updateMouseButtonState(desired);
+    }
+
+    private void updateStylusHoverScroll(MotionEvent event) {
+        int action = event.getActionMasked();
+        boolean hovering = (action == MotionEvent.ACTION_HOVER_ENTER
+                || action == MotionEvent.ACTION_HOVER_MOVE)
+                && event.getPressure() <= 0f;
+        int buttons = event.getButtonState();
+        int actionButton = event.getActionButton();
+        int stylusButtonMask = MotionEvent.BUTTON_STYLUS_PRIMARY
+                | MotionEvent.BUTTON_STYLUS_SECONDARY;
+        if (action == MotionEvent.ACTION_BUTTON_PRESS)
+            buttons |= actionButton & stylusButtonMask;
+        else if (action == MotionEvent.ACTION_BUTTON_RELEASE)
+            buttons &= ~(actionButton & stylusButtonMask);
+
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean(KEY_STYLUS_HOVER_SCROLL, true);
+        float speed = prefs.getFloat(KEY_STYLUS_HOVER_SCROLL_SPEED, 0.5f);
+        float scroll = stylusHoverScroll.update(hovering && enabled,
+                (buttons & stylusButtonMask) != 0, event.getX(), event.getY(), speed);
+        if (scroll != 0f && mNative != null)
+            mNative.sendMouseScroll(0, scroll);
     }
 
     private void releaseAllMouseButtons() {
@@ -2708,9 +2754,10 @@ public class MainActivity extends Activity
         mNative.sendMouseMotion(nativeX, nativeY, dx, dy);
 
         if (event.getToolType(event.getActionIndex()) == MotionEvent.TOOL_TYPE_STYLUS
-                || event.getToolType(event.getActionIndex()) == MotionEvent.TOOL_TYPE_ERASER)
+                || event.getToolType(event.getActionIndex()) == MotionEvent.TOOL_TYPE_ERASER) {
+            updateStylusHoverScroll(event);
             updateStylusButtonState(event);
-        else
+        } else
             updateMouseButtonStateFromEvent(event);
         return true;
     }
