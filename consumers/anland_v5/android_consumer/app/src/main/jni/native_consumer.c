@@ -948,6 +948,24 @@ static void *render_thread_func(void *arg)
                 usleep(500000);
                 continue;
             }
+            /* Samsung's input layer may install its S Pen cursor during display
+             * setup. Reapply the Activity's hidden pointer icon after connect. */
+            if (g_jvm && s->activity_obj) {
+                JNIEnv *env = NULL;
+                bool attached = false;
+                if ((*g_jvm)->GetEnv(g_jvm, (void **)&env, JNI_VERSION_1_6) == JNI_EDETACHED) {
+                    if ((*g_jvm)->AttachCurrentThread(g_jvm, &env, NULL) == 0)
+                        attached = true;
+                }
+                if (env) {
+                    jclass cls = (*env)->GetObjectClass(env, s->activity_obj);
+                    jmethodID mid = (*env)->GetMethodID(env, cls, "onDisplayConnected", "()V");
+                    if (mid)
+                        (*env)->CallVoidMethod(env, s->activity_obj, mid);
+                }
+                if (attached)
+                    (*g_jvm)->DetachCurrentThread(g_jvm);
+            }
         }
 
         ANativeWindowBuffer *anb = NULL;

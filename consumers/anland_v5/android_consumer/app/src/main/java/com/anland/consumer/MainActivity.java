@@ -281,6 +281,13 @@ public class MainActivity extends Activity
         });
     }
 
+    // The Samsung input layer can replace a window's pointer icon while the
+    // display connection is being established. Reapply the hidden icon after
+    // native connection, matching Termux:X11's connection-time behavior.
+    public void onDisplayConnected() {
+        runOnUiThread(this::setupCursorHiding);
+    }
+
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
