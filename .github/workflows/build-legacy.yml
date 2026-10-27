@@ -1,0 +1,10 @@
+name: Build Anland v5
+
+on:
+  push:
+    branches: [legacy]
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: Kosiou/anland/.github/workflows/build.yml@legacy
