@@ -23,16 +23,16 @@ final class StylusHoverPointerLease {
     private static final long COMMAND_TIMEOUT_MS = 5000;
     private static final long RELEASE_DELAY_MS = 700;
 
-    private static final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
-        Thread thread = new Thread(r, "spen-pointer-lease");
-        thread.setDaemon(true);
-        return thread;
-    });
-    private static final Handler mainHandler = new Handler(Looper.getMainLooper());
     private static StylusHoverPointerLease instance;
 
     private final SharedPreferences prefs;
     private final SuCommand.CommandRunner runner = new SuCommand.SuRunner();
+    private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r, "spen-pointer-lease");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final Set<Object> owners = Collections.newSetFromMap(new IdentityHashMap<>());
     private boolean applied;
 
