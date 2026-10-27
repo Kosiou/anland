@@ -589,7 +589,18 @@ public class MainActivity extends Activity
         // the system auto-panning the fullscreen window.
         getWindow().setDecorFitsSystemWindows(false);
 
-        surfaceView = new SurfaceView(this);
+        surfaceView = new SurfaceView(this) {
+            @Override
+            public PointerIcon onResolvePointerIcon(MotionEvent event, int pointerIndex) {
+                int toolType = event.getToolType(pointerIndex);
+                if (StylusPointerIconPolicy.shouldHide(
+                        event.isFromSource(InputDevice.SOURCE_MOUSE), toolType,
+                        MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.TOOL_TYPE_ERASER)) {
+                    return PointerIcon.getSystemIcon(MainActivity.this, PointerIcon.TYPE_NULL);
+                }
+                return super.onResolvePointerIcon(event, pointerIndex);
+            }
+        };
         // Give the content view an explicit focus target. Pointer-captured events
         // are routed along the focused-view path; the root override below then
         // intercepts them before the focused child handles them.
