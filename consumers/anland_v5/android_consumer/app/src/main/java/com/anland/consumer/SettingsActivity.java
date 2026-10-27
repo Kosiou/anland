@@ -82,6 +82,7 @@ public class SettingsActivity extends Activity {
 
     // ===== 新增：触摸板 Key =====
     private static final String KEY_TOUCHPAD_MODE = "touchpad_mode";
+    private static final String KEY_STYLUS_BUTTON_RIGHT_CLICK = "stylus_button_right_click";
     private static final String KEY_MOUSE_ACCEL = "mouse_speed";
     private static final String KEY_POINTER_CAPTURE = "pointer_capture";
     private static final String KEY_SCROLL_SPEED = "scroll_speed";
@@ -1194,6 +1195,16 @@ public class SettingsActivity extends Activity {
         touchpadHint.setTextColor(Color.GRAY);
         touchpadHint.setPadding(0, dp(4), 0, dp(12));
         root.addView(touchpadHint);
+
+        Switch stylusRightClickSwitch = new Switch(this);
+        stylusRightClickSwitch.setText(R.string.stylus_button_right_click_switch);
+        stylusRightClickSwitch.setTextSize(14);
+        stylusRightClickSwitch.setPadding(0, dp(8), 0, 0);
+        stylusRightClickSwitch.setChecked(prefs.getBoolean(KEY_STYLUS_BUTTON_RIGHT_CLICK, true));
+        stylusRightClickSwitch.setOnCheckedChangeListener((v, checked) ->
+                getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+                        .putBoolean(KEY_STYLUS_BUTTON_RIGHT_CLICK, checked).apply());
+        root.addView(stylusRightClickSwitch);
 
         // External mouse pointer capture.  This is opt-in because it changes
         // Android's mouse event mode from absolute coordinates to relative motion.
