@@ -308,8 +308,10 @@ public class MainActivity extends Activity
             lifecycleHandler.removeCallbacks(delayedFocusStop);
             lifecycleHandler.postDelayed(delayedFocusStop, FOCUS_STOP_DELAY_MS);
         }
-        if (!hasFocus)
+        if (!hasFocus) {
+            stylusTouching = false;
             releaseAllMouseButtons();
+        }
         if (hasFocus && clipboard != null) {
             clipboard.pushClipboard();
         }
@@ -2530,6 +2532,7 @@ public class MainActivity extends Activity
     private static final int CLASSIFICATION_PINCH = 5;
 
     private int savedBS = 0;
+    private boolean stylusTouching = false;
 
     private static final int[][] BUTTON_MAP = {
         {MotionEvent.BUTTON_PRIMARY,   0x110}, // BTN_LEFT
@@ -2601,17 +2604,20 @@ public class MainActivity extends Activity
     private void updateStylusButtonState(MotionEvent event) {
         int action = event.getActionMasked();
         if (action == MotionEvent.ACTION_CANCEL) {
+            stylusTouching = false;
             releaseAllMouseButtons();
             return;
         }
         int buttons = event.getButtonState();
-        boolean touching = action == MotionEvent.ACTION_DOWN
-                || action == MotionEvent.ACTION_MOVE && event.getPressure() > 0f;
-        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_HOVER_MOVE
-                || action == MotionEvent.ACTION_HOVER_ENTER || action == MotionEvent.ACTION_HOVER_EXIT)
-            touching = false;
+        if (action == MotionEvent.ACTION_DOWN)
+            stylusTouching = true;
+        else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_HOVER_ENTER
+                || action == MotionEvent.ACTION_HOVER_EXIT)
+            stylusTouching = false;
+        else if (action == MotionEvent.ACTION_MOVE)
+            stylusTouching = event.getPressure() > 0f;
         int desired = buttons & ~(MotionEvent.BUTTON_PRIMARY | MotionEvent.BUTTON_SECONDARY);
-        if (touching) {
+        if (stylusTouching) {
             boolean right = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getBoolean(
                     KEY_STYLUS_BUTTON_RIGHT_CLICK, true)
                     && (buttons & (MotionEvent.BUTTON_STYLUS_PRIMARY
