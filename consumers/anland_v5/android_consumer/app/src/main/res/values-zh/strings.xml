@@ -126,6 +126,8 @@
     <!-- Touchpad -->
     <string name="touchpad_mode_switch">触摸板模式（相对移动）</string>
     <string name="stylus_button_right_click_switch">手写笔侧键作为右键</string>
+    <string name="hide_system_stylus_pointer_switch">隐藏 Android 手写笔悬停指针（需要 Root）</string>
+    <string name="hide_system_stylus_pointer_hint">Anland 桌面窗口处于前台时，临时关闭系统悬停指针；离开前台时恢复原值。需要 Root。若 Android 强行停止 Anland，设置会在下次打开 Anland 时恢复。</string>
     <string name="touchpad_hint">开启：手指滑动移动鼠标光标（相对）。关闭：触摸直接映射到屏幕（绝对）。</string>
     <string name="pointer_capture_switch">捕获外接指针</string>
     <string name="pointer_capture_hint">开启后将外接鼠标或触摸板锁定在桌面画面内并使用相对移动，移到屏幕顶部或底部不会呼出 Android 状态栏或导航栏。按 Android 返回键可暂时释放，点击桌面画面重新捕获；屏幕触摸不受影响。</string>

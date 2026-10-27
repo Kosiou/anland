@@ -85,6 +85,7 @@ public class SettingsActivity extends Activity {
     private static final String KEY_STYLUS_BUTTON_RIGHT_CLICK = "stylus_button_right_click";
     private static final String KEY_MOUSE_ACCEL = "mouse_speed";
     private static final String KEY_POINTER_CAPTURE = "pointer_capture";
+    private static final String KEY_HIDE_SYSTEM_STYLUS_POINTER = "hide_system_stylus_pointer";
     private static final String KEY_SCROLL_SPEED = "scroll_speed";
     private static final String KEY_SCROLL_REVERSE = "scroll_reverse";
     private static final String KEY_SCROLL_THRESHOLD = "touchpad_scroll_threshold";
@@ -1205,6 +1206,23 @@ public class SettingsActivity extends Activity {
                 getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
                         .putBoolean(KEY_STYLUS_BUTTON_RIGHT_CLICK, checked).apply());
         root.addView(stylusRightClickSwitch);
+
+        Switch hideSystemStylusPointerSwitch = new Switch(this);
+        hideSystemStylusPointerSwitch.setText(R.string.hide_system_stylus_pointer_switch);
+        hideSystemStylusPointerSwitch.setTextSize(14);
+        hideSystemStylusPointerSwitch.setPadding(0, dp(8), 0, 0);
+        hideSystemStylusPointerSwitch.setChecked(
+                prefs.getBoolean(KEY_HIDE_SYSTEM_STYLUS_POINTER, true));
+        hideSystemStylusPointerSwitch.setOnCheckedChangeListener((v, checked) ->
+                prefs.edit().putBoolean(KEY_HIDE_SYSTEM_STYLUS_POINTER, checked).apply());
+        root.addView(hideSystemStylusPointerSwitch);
+
+        TextView hideSystemStylusPointerHint = new TextView(this);
+        hideSystemStylusPointerHint.setText(R.string.hide_system_stylus_pointer_hint);
+        hideSystemStylusPointerHint.setTextSize(12);
+        hideSystemStylusPointerHint.setTextColor(Color.GRAY);
+        hideSystemStylusPointerHint.setPadding(0, dp(4), 0, dp(12));
+        root.addView(hideSystemStylusPointerHint);
 
         // External mouse pointer capture.  This is opt-in because it changes
         // Android's mouse event mode from absolute coordinates to relative motion.

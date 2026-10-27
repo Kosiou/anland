@@ -135,6 +135,8 @@
     <!-- Touchpad -->
     <string name="touchpad_mode_switch">Touchpad Mode (relative movement)</string>
     <string name="stylus_button_right_click_switch">S Pen side button for right click</string>
+    <string name="hide_system_stylus_pointer_switch">Hide Android S Pen hover pointer (root)</string>
+    <string name="hide_system_stylus_pointer_hint">Temporarily changes the system hover-pointer setting while an Anland desktop is active, then restores its original value. Requires root. If Android force-stops Anland before cleanup, the setting is restored the next time Anland opens.</string>
     <string name="touchpad_hint">ON: finger slides move mouse cursor (relative). OFF: touch maps directly to screen (absolute).</string>
     <string name="pointer_capture_switch">Capture external pointer</string>
     <string name="pointer_capture_hint">Locks an external mouse or touchpad to the desktop view and uses relative movement, so reaching the top or bottom edge will not reveal Android system bars. Use Android Back to release temporarily; click the desktop view to capture again. Screen touch input is unaffected.</string>

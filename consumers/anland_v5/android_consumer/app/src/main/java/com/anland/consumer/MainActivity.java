@@ -62,6 +62,7 @@ public class MainActivity extends Activity
     static final String KEY_TOPAPP_MODE = "topapp_mode";
     static final String KEY_TOPAPP_STOPS = "topapp_stops";
     private static final String KEY_MIC_ENABLED = "mic_enabled";
+    private static final String KEY_HIDE_SYSTEM_STYLUS_POINTER = "hide_system_stylus_pointer";
     private static final String KEY_CAMERA_ENABLED = "camera_enabled";
     // Latency presets in ms; 0 = engine default. Shared with SettingsActivity.
     static final String KEY_SPEAKER_LATENCY_MS = "speaker_latency_ms";
@@ -1589,6 +1590,12 @@ public class MainActivity extends Activity
             return;
         }
 
+        StylusHoverPointerLease pointerLease = StylusHoverPointerLease.get(this);
+        pointerLease.recoverStaleOverride();
+        if (getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .getBoolean(KEY_HIDE_SYSTEM_STYLUS_POINTER, true))
+            pointerLease.acquire(this);
+
         requestMediaAudioFocus();
 
         // Show settings notification while in foreground, unless disabled in Settings.
@@ -1679,6 +1686,7 @@ public class MainActivity extends Activity
         super.onPause();
         Log.i(TAG, "onPause: stopping native and immersive input");
         mResumed = false;
+        StylusHoverPointerLease.get(this).release(this);
         lifecycleHandler.removeCallbacks(delayedFocusStop);
         lifecycleHandler.removeCallbacks(delayedSurfaceStop);
         // Socket-missing bounce: no pipeline exists, so skip teardown (mNative is
@@ -1710,6 +1718,7 @@ public class MainActivity extends Activity
         lifecycleHandler.removeCallbacks(delayedFocusStop);
         lifecycleHandler.removeCallbacks(delayedSurfaceStop);
         mResumed = false;
+        StylusHoverPointerLease.get(this).release(this);
         abandonMediaAudioFocus();
         if (immersive != null) immersive.stop();
         OplusRefreshRateLease.release(this);
