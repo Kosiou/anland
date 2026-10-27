@@ -2605,11 +2605,19 @@ public class MainActivity extends Activity
 
     private boolean isMouseEvent(MotionEvent event) {
         int source = event.getSource();
+        int toolType = event.getToolType(event.getActionIndex());
+        // A stylus can be reported either as SOURCE_STYLUS or as a tool on the
+        // touchscreen source (common for S Pens). Route both pen and eraser
+        // hover/motion through the pointer path instead of forwarding them as
+        // touchscreen contacts.
+        if (toolType == MotionEvent.TOOL_TYPE_STYLUS
+                || toolType == MotionEvent.TOOL_TYPE_ERASER)
+            return (source & InputDevice.SOURCE_CLASS_POINTER)
+                    == InputDevice.SOURCE_CLASS_POINTER;
         if ((source & InputDevice.SOURCE_TOUCHSCREEN) == InputDevice.SOURCE_TOUCHSCREEN)
             return false;
         if ((source & InputDevice.SOURCE_MOUSE) != InputDevice.SOURCE_MOUSE)
             return false;
-        int toolType = event.getToolType(event.getActionIndex());
         return toolType == MotionEvent.TOOL_TYPE_MOUSE
             || toolType == MotionEvent.TOOL_TYPE_FINGER;
     }
