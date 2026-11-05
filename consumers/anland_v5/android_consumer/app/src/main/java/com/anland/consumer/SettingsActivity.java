@@ -89,6 +89,14 @@ public class SettingsActivity extends Activity {
 
     // ===== 新增：触摸板 Key =====
     private static final String KEY_TOUCHPAD_MODE = "touchpad_mode";
+    private static final String KEY_STYLUS_MOUSE_COMPAT = MainActivity.KEY_STYLUS_MOUSE_COMPAT;
+    private static final String KEY_STYLUS_BUTTON_RIGHT_CLICK =
+            MainActivity.KEY_STYLUS_BUTTON_RIGHT_CLICK;
+    private static final String KEY_STYLUS_HOVER_SCROLL = MainActivity.KEY_STYLUS_HOVER_SCROLL;
+    private static final String KEY_STYLUS_HOVER_SCROLL_SPEED =
+            MainActivity.KEY_STYLUS_HOVER_SCROLL_SPEED;
+    private static final String KEY_HIDE_SYSTEM_STYLUS_POINTER =
+            MainActivity.KEY_HIDE_SYSTEM_STYLUS_POINTER;
     private static final String KEY_MOUSE_ACCEL = "mouse_speed";
     private static final String KEY_POINTER_CAPTURE = "pointer_capture";
     private static final String KEY_SCROLL_SPEED = "scroll_speed";
@@ -1215,6 +1223,59 @@ public class SettingsActivity extends Activity {
         touchpadHint.setTextColor(Color.GRAY);
         touchpadHint.setPadding(0, dp(4), 0, dp(12));
         root.addView(touchpadHint);
+
+        Switch stylusCompat = new Switch(this);
+        stylusCompat.setText(R.string.stylus_mouse_compat_switch);
+        stylusCompat.setTextSize(14);
+        stylusCompat.setPadding(0, dp(8), 0, 0);
+        stylusCompat.setChecked(prefs.getBoolean(KEY_STYLUS_MOUSE_COMPAT, false));
+        stylusCompat.setOnCheckedChangeListener((v, checked) ->
+                prefs.edit().putBoolean(KEY_STYLUS_MOUSE_COMPAT, checked).apply());
+        root.addView(stylusCompat);
+
+        TextView stylusCompatHint = new TextView(this);
+        stylusCompatHint.setText(R.string.stylus_mouse_compat_hint);
+        stylusCompatHint.setTextSize(12);
+        stylusCompatHint.setTextColor(Color.GRAY);
+        stylusCompatHint.setPadding(0, dp(4), 0, dp(8));
+        root.addView(stylusCompatHint);
+
+        Switch stylusRightClick = new Switch(this);
+        stylusRightClick.setText(R.string.stylus_button_right_click_switch);
+        stylusRightClick.setTextSize(14);
+        stylusRightClick.setPadding(0, dp(8), 0, 0);
+        stylusRightClick.setChecked(prefs.getBoolean(KEY_STYLUS_BUTTON_RIGHT_CLICK, true));
+        stylusRightClick.setOnCheckedChangeListener((v, checked) ->
+                prefs.edit().putBoolean(KEY_STYLUS_BUTTON_RIGHT_CLICK, checked).apply());
+        root.addView(stylusRightClick);
+
+        Switch hideStylusPointer = new Switch(this);
+        hideStylusPointer.setText(R.string.hide_system_stylus_pointer_switch);
+        hideStylusPointer.setTextSize(14);
+        hideStylusPointer.setPadding(0, dp(8), 0, 0);
+        hideStylusPointer.setChecked(prefs.getBoolean(KEY_HIDE_SYSTEM_STYLUS_POINTER, true));
+        hideStylusPointer.setOnCheckedChangeListener((v, checked) ->
+                prefs.edit().putBoolean(KEY_HIDE_SYSTEM_STYLUS_POINTER, checked).apply());
+        root.addView(hideStylusPointer);
+
+        TextView hideStylusPointerHint = new TextView(this);
+        hideStylusPointerHint.setText(R.string.hide_system_stylus_pointer_hint);
+        hideStylusPointerHint.setTextSize(12);
+        hideStylusPointerHint.setTextColor(Color.GRAY);
+        hideStylusPointerHint.setPadding(0, dp(4), 0, dp(8));
+        root.addView(hideStylusPointerHint);
+
+        Switch stylusHoverScroll = new Switch(this);
+        stylusHoverScroll.setText(R.string.stylus_hover_scroll_switch);
+        stylusHoverScroll.setTextSize(14);
+        stylusHoverScroll.setPadding(0, dp(8), 0, 0);
+        stylusHoverScroll.setChecked(prefs.getBoolean(KEY_STYLUS_HOVER_SCROLL, true));
+        stylusHoverScroll.setOnCheckedChangeListener((v, checked) ->
+                prefs.edit().putBoolean(KEY_STYLUS_HOVER_SCROLL, checked).apply());
+        root.addView(stylusHoverScroll);
+        addFloatSlider(root, R.string.stylus_hover_scroll_speed_label,
+                R.string.scroll_speed_value, null, KEY_STYLUS_HOVER_SCROLL_SPEED,
+                0.05f, 3.0f, 0.05f, 0.5f);
 
         Switch tapSwitch = new Switch(this);
         tapSwitch.setText(R.string.pad_tap);

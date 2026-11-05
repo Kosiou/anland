@@ -98,6 +98,8 @@ public class MainActivity extends Activity
                     frame.flags, frame.buttons, frame.timeMsec);
         }
     });
+    private final StylusMouseInput stylusMouseInput = new StylusMouseInput();
+    private boolean stylusMouseTouching;
     private final InputManager.InputDeviceListener tabletDeviceListener =
             new InputManager.InputDeviceListener() {
                 @Override public void onInputDeviceAdded(int deviceId) { }
@@ -176,6 +178,11 @@ public class MainActivity extends Activity
 
     // ==================== 触摸板相关设置 ====================
     public static final String KEY_TOUCHPAD_MODE = "touchpad_mode";
+    static final String KEY_STYLUS_MOUSE_COMPAT = "stylus_mouse_compat";
+    static final String KEY_STYLUS_BUTTON_RIGHT_CLICK = "stylus_button_right_click";
+    static final String KEY_STYLUS_HOVER_SCROLL = "stylus_hover_scroll";
+    static final String KEY_STYLUS_HOVER_SCROLL_SPEED = "stylus_hover_scroll_speed";
+    static final String KEY_HIDE_SYSTEM_STYLUS_POINTER = "hide_system_stylus_pointer";
     public static final String KEY_MOUSE_ACCEL = "mouse_speed"; // 名称仍为 speed，实际控制加速度强度
     // Two-finger scroll tuning, shared by the on-screen and captured touchpads.
     public static final String KEY_SCROLL_SPEED = "scroll_speed";
@@ -348,6 +355,7 @@ public class MainActivity extends Activity
         if (!hasFocus) {
             cancelOverlayTouches();
             tabletInput.cancelAll(SystemClock.uptimeMillis());
+            cancelStylusMouseInput();
             releaseAllMouseButtons();
         }
         if (hasFocus && clipboard != null) {
@@ -760,7 +768,7 @@ public class MainActivity extends Activity
                 // HUD children otherwise receive stylus DOWN first and can
                 // turn it into a mouse click. Route the pen at the window edge,
                 // then let only the remaining finger pointers reach the views.
-                handleTabletMotionEvent(event);
+                routeStylusInput(event);
                 MotionEvent fingers = filterTabletPointers(event, false);
                 if (fingers == null)
                     return true;
@@ -785,7 +793,7 @@ public class MainActivity extends Activity
 
                 // Hover and button samples can be consumed by a HUD child just
                 // like touch DOWN; deliver the pen first at the window edge.
-                handleTabletMotionEvent(event);
+                routeStylusInput(event);
                 MotionEvent fingers = filterTabletPointers(event, false);
                 if (fingers == null)
                     return true;
@@ -1402,7 +1410,7 @@ public class MainActivity extends Activity
     /** Handle mouse and hardware-touchpad events delivered through pointer capture. */
     private boolean handleCapturedPointerEvent(MotionEvent event) {
         if (containsTabletPointer(event)) {
-            handleTabletMotionEvent(event);
+            routeStylusInput(event);
             return true;
         }
         // A few OEMs combine source capability bits. Prefer the touchpad path
@@ -1861,6 +1869,13 @@ public class MainActivity extends Activity
             return;
         }
 
+        StylusHoverPointerLease pointerLease = StylusHoverPointerLease.get(this);
+        pointerLease.recoverStaleOverride();
+        SharedPreferences inputPrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        if (inputPrefs.getBoolean(KEY_STYLUS_MOUSE_COMPAT, false)
+                && inputPrefs.getBoolean(KEY_HIDE_SYSTEM_STYLUS_POINTER, true))
+            pointerLease.acquire(this);
+
         tabletInputManager = getSystemService(InputManager.class);
         if (tabletInputManager != null && !tabletDeviceListenerRegistered) {
             tabletInputManager.registerInputDeviceListener(tabletDeviceListener, lifecycleHandler);
@@ -1962,6 +1977,8 @@ public class MainActivity extends Activity
         Log.i(TAG, "onPause: releasing immersive input");
         mResumed = false;
         automaticImmersive.cancel();
+        StylusHoverPointerLease.get(this).release(this);
+        cancelStylusMouseInput();
         lifecycleHandler.removeCallbacks(automaticImmersiveEntry);
         tabletInput.cancelAll(SystemClock.uptimeMillis());
         if (tabletInputManager != null && tabletDeviceListenerRegistered) {
@@ -2009,6 +2026,8 @@ public class MainActivity extends Activity
         lifecycleHandler.removeCallbacks(delayedSurfaceStop);
         mResumed = false;
         automaticImmersive.cancel();
+        StylusHoverPointerLease.get(this).release(this);
+        cancelStylusMouseInput();
         lifecycleHandler.removeCallbacks(automaticImmersiveEntry);
         abandonMediaAudioFocus();
         tabletInput.cancelAll(SystemClock.uptimeMillis());
@@ -2508,7 +2527,17 @@ public class MainActivity extends Activity
      * desktop stream must not be left open when a key is pressed mid-drag.
      */
     private void routeGrabbedTouch(MotionEvent ev) {
-        handleTabletMotionEvent(ev);
+        if (routeStylusInput(ev) && containsTabletPointer(ev)) {
+            MotionEvent fingers = filterTabletPointers(ev, false);
+            if (fingers == null)
+                return;
+            try {
+                routeGrabbedTouch(fingers);
+            } finally {
+                fingers.recycle();
+            }
+            return;
+        }
         if (!immersiveHudTouch) {
             // Setting off: the grabbed stream belongs to the desktop alone,
             // exactly like it did before the HUD could be reached here.
@@ -2792,7 +2821,7 @@ public class MainActivity extends Activity
     public boolean onTouchEvent(MotionEvent event) {
         if (touchscreenGrabbed && event.isFromSource(InputDevice.SOURCE_TOUCHSCREEN))
             return true; // Android may still dispatch the tail queued before EVIOCGRAB.
-        handleTabletMotionEvent(event);
+        routeStylusInput(event);
         boolean mouseEvent = isMouseEvent(event);
         if (mouseEvent && event.getActionMasked() == MotionEvent.ACTION_DOWN
                 && pointerCaptureWanted() && mRoot != null
@@ -2825,7 +2854,7 @@ public class MainActivity extends Activity
     @Override
     public boolean onGenericMotionEvent(MotionEvent event) {
         if (containsTabletPointer(event)) {
-            handleTabletMotionEvent(event);
+            routeStylusInput(event);
             return true;
         }
         if (isMouseEvent(event)) {
@@ -3133,6 +3162,81 @@ public class MainActivity extends Activity
                 return true;
         }
         return false;
+    }
+
+    private boolean isStylusMouseCompatEnabled() {
+        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .getBoolean(KEY_STYLUS_MOUSE_COMPAT, false);
+    }
+
+    /** Select one protocol for pen input so the same sample is never sent twice. */
+    private boolean routeStylusInput(MotionEvent event) {
+        if (!containsTabletPointer(event)) {
+            handleTabletMotionEvent(event);
+            return false;
+        }
+        if (!isStylusMouseCompatEnabled()) {
+            handleTabletMotionEvent(event);
+            return false;
+        }
+        handleStylusMouseEvent(event);
+        return true;
+    }
+
+    private void handleStylusMouseEvent(MotionEvent event) {
+        int action = event.getActionMasked();
+        int index = Math.min(event.getActionIndex(), event.getPointerCount() - 1);
+        boolean stylusAction = isTabletTool(event.getToolType(index));
+        boolean cancelled = action == MotionEvent.ACTION_CANCEL;
+        if (cancelled) {
+            stylusMouseTouching = false;
+        } else if (stylusAction) {
+            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN)
+                stylusMouseTouching = true;
+            else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP
+                    || action == MotionEvent.ACTION_HOVER_ENTER
+                    || action == MotionEvent.ACTION_HOVER_EXIT)
+                stylusMouseTouching = false;
+        }
+
+        int buttons = effectiveButtonState(event);
+        boolean sideButton = (buttons & (MotionEvent.BUTTON_STYLUS_PRIMARY
+                | MotionEvent.BUTTON_STYLUS_SECONDARY)) != 0;
+        boolean hovering = !stylusMouseTouching && stylusAction
+                && (action == MotionEvent.ACTION_HOVER_ENTER
+                    || action == MotionEvent.ACTION_HOVER_MOVE
+                    || action == MotionEvent.ACTION_BUTTON_PRESS
+                    || action == MotionEvent.ACTION_BUTTON_RELEASE);
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        boolean rightClick = prefs.getBoolean(KEY_STYLUS_BUTTON_RIGHT_CLICK, true);
+        boolean wheelEnabled = prefs.getBoolean(KEY_STYLUS_HOVER_SCROLL, true);
+        float speed = prefs.getFloat(KEY_STYLUS_HOVER_SCROLL_SPEED, 0.5f);
+        float y = event.getY(index);
+        int previousButton = stylusMouseInput.heldButton();
+        StylusMouseInput.Update update = stylusMouseInput.update(stylusMouseTouching,
+                hovering, cancelled, sideButton, rightClick, wheelEnabled, y, speed);
+
+        if (stylusAction && mNative != null) {
+            float[] coords = convertToNativeCoords(event.getX(index), y);
+            mNative.sendMouseMotion(coords[0], coords[1], 0f, 0f);
+        }
+        if (update.buttonChanged && mNative != null) {
+            if (previousButton != StylusMouseInput.BUTTON_NONE)
+                mNative.sendMouseButton(previousButton, false);
+            if (update.button != StylusMouseInput.BUTTON_NONE)
+                mNative.sendMouseButton(update.button, true);
+        }
+        if (update.verticalScroll != 0f && mNative != null)
+            mNative.sendMouseScroll(0, update.verticalScroll);
+    }
+
+    private void cancelStylusMouseInput() {
+        int previousButton = stylusMouseInput.heldButton();
+        StylusMouseInput.Update update = stylusMouseInput.update(false, false, true,
+                false, false, false, 0f, 0f);
+        stylusMouseTouching = false;
+        if (previousButton != StylusMouseInput.BUTTON_NONE && mNative != null)
+            mNative.sendMouseButton(previousButton, false);
     }
 
     /** Convert every pen pointer, including historical samples, without mouse emulation. */

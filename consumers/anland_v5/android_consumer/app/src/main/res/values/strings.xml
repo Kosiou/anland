@@ -206,6 +206,13 @@
     <!-- Touchpad -->
     <string name="touchpad_mode_switch">Touchpad Mode (relative movement)</string>
     <string name="touchpad_hint">ON: finger slides move mouse cursor (relative). OFF: touch maps directly to screen (absolute).</string>
+    <string name="stylus_mouse_compat_switch">S Pen mouse compatibility mode</string>
+    <string name="stylus_mouse_compat_hint">Uses S Pen input as an ordinary mouse instead of the native tablet protocol.</string>
+    <string name="stylus_button_right_click_switch">S Pen side button as right click</string>
+    <string name="stylus_hover_scroll_switch">S Pen side button hover scrolling</string>
+    <string name="stylus_hover_scroll_speed_label">S Pen hover scroll speed</string>
+    <string name="hide_system_stylus_pointer_switch">Hide Android S Pen hover pointer</string>
+    <string name="hide_system_stylus_pointer_hint">Requires root. The original Android setting is restored when Anland exits.</string>
     <string name="pointer_capture_switch">Capture external pointer</string>
     <string name="pointer_capture_hint">Locks an external mouse or touchpad to the desktop view and uses relative movement, so reaching the top or bottom edge will not reveal Android system bars. Use Android Back to release temporarily; click the desktop view to capture again. Screen touch input is unaffected.</string>
     <string name="pointer_capture_released">External pointer released. Click the desktop view to capture it again.</string>

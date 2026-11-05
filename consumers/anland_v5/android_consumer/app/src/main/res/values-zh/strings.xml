@@ -197,6 +197,13 @@
     <!-- Touchpad -->
     <string name="touchpad_mode_switch">触摸板模式（相对移动）</string>
     <string name="touchpad_hint">开启：手指滑动移动鼠标光标（相对）。关闭：触摸直接映射到屏幕（绝对）。</string>
+    <string name="stylus_mouse_compat_switch">S Pen 鼠标兼容模式</string>
+    <string name="stylus_mouse_compat_hint">将 S Pen 作为普通鼠标使用，而不是发送原生数位板协议。</string>
+    <string name="stylus_button_right_click_switch">S Pen 侧键作为右键</string>
+    <string name="stylus_hover_scroll_switch">S Pen 侧键悬停滚轮</string>
+    <string name="stylus_hover_scroll_speed_label">S Pen 悬停滚轮速度</string>
+    <string name="hide_system_stylus_pointer_switch">隐藏 Android S Pen 悬停指针</string>
+    <string name="hide_system_stylus_pointer_hint">需要 root。退出 Anland 时恢复 Android 原设置。</string>
     <string name="pointer_capture_switch">捕获外接指针</string>
     <string name="pointer_capture_hint">开启后将外接鼠标或触摸板锁定在桌面画面内并使用相对移动，移到屏幕顶部或底部不会呼出 Android 状态栏或导航栏。按 Android 返回键可暂时释放，点击桌面画面重新捕获；屏幕触摸不受影响。</string>
     <string name="pointer_capture_released">外接指针已释放。点击桌面画面可重新捕获。</string>
