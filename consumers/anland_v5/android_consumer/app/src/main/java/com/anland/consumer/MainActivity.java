@@ -3185,12 +3185,20 @@ public class MainActivity extends Activity
 
     private void handleStylusMouseEvent(MotionEvent event) {
         int action = event.getActionMasked();
-        int index = Math.min(event.getActionIndex(), event.getPointerCount() - 1);
-        boolean stylusAction = isTabletTool(event.getToolType(index));
+        int actionIndex = Math.min(event.getActionIndex(), event.getPointerCount() - 1);
+        boolean actionStylus = isTabletTool(event.getToolType(actionIndex));
+        int index = actionStylus ? actionIndex : -1;
+        for (int pointer = 0; pointer < event.getPointerCount(); pointer++) {
+            if (isTabletTool(event.getToolType(pointer))) {
+                index = pointer;
+                break;
+            }
+        }
+        boolean stylusAction = index >= 0;
         boolean cancelled = action == MotionEvent.ACTION_CANCEL;
         if (cancelled) {
             stylusMouseTouching = false;
-        } else if (stylusAction) {
+        } else if (actionStylus) {
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN)
                 stylusMouseTouching = true;
             else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP
@@ -3211,7 +3219,7 @@ public class MainActivity extends Activity
         boolean rightClick = prefs.getBoolean(KEY_STYLUS_BUTTON_RIGHT_CLICK, true);
         boolean wheelEnabled = prefs.getBoolean(KEY_STYLUS_HOVER_SCROLL, true);
         float speed = prefs.getFloat(KEY_STYLUS_HOVER_SCROLL_SPEED, 0.5f);
-        float y = event.getY(index);
+        float y = stylusAction ? event.getY(index) : 0f;
         int previousButton = stylusMouseInput.heldButton();
         StylusMouseInput.Update update = stylusMouseInput.update(stylusMouseTouching,
                 hovering, cancelled, sideButton, rightClick, wheelEnabled, y, speed);
