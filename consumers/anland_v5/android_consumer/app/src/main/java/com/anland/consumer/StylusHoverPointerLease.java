@@ -115,7 +115,7 @@ final class StylusHoverPointerLease {
             return false;
         if ("0".equals(current)) {
             String command = "null".equals(original)
-                    ? "settings --user " + UserHandle.myUserId() + " delete system " + SETTING
+                    ? "settings --user " + userId() + " delete system " + SETTING
                     : putCommand(original);
             SuCommand.CommandResult write = run(command);
             if (!write.isClean()) {
@@ -136,12 +136,16 @@ final class StylusHoverPointerLease {
     }
 
     private String getCommand() {
-        return "settings --user " + UserHandle.myUserId() + " get system " + SETTING;
+        return "settings --user " + userId() + " get system " + SETTING;
     }
 
     private String putCommand(String value) {
-        return "settings --user " + UserHandle.myUserId() + " put system " + SETTING
+        return "settings --user " + userId() + " put system " + SETTING
                 + " " + value;
+    }
+
+    private static int userId() {
+        return UserHandle.getUserId(android.os.Process.myUid());
     }
 
     private static boolean valid(String value) {
