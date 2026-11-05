@@ -2,7 +2,6 @@ package com.anland.consumer;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.UserHandle;
 import android.util.Log;
 
 import java.util.Collections;
@@ -145,7 +144,9 @@ final class StylusHoverPointerLease {
     }
 
     private static int userId() {
-        return UserHandle.getUserId(android.os.Process.myUid());
+        // Anland runs in the primary Android user on supported devices. Keeping
+        // this literal avoids hidden UserHandle APIs unavailable to app builds.
+        return 0;
     }
 
     private static boolean valid(String value) {
